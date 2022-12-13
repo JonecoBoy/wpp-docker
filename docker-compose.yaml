@@ -1,0 +1,86 @@
+version: '3'
+
+services: 
+
+  wpp-slot-1:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    image: joneco/wpp
+    ports:
+      - "8081:8080"
+    environment:
+      - SLOT=Joneco01
+    volumes:
+      - /storage/tokens:/usr/app/storage/tokens
+    container_name: wpp-slot-1
+    hostname: wppp
+    entrypoint: npm run start
+    networks: 
+      wpp-network:
+        ipv4_address: 172.20.0.1
+    tty: true
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+        reservations:
+          memory: 200M
+  wpp-slot-2:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    image: joneco/wpp
+    ports:
+      - "8082:8080"
+    environment:
+      - SLOT=Joneco02
+    volumes:
+      - /storage/tokens:/usr/app/storage/tokens
+    container_name: wpp-slot-2
+    hostname: wppp
+    entrypoint: npm run start
+    networks: 
+      wpp-network:
+        ipv4_address: 172.20.0.2
+    tty: true
+    
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+        reservations:
+          memory: 200M
+
+  nginx:
+      build: 
+        context: ./nginx
+        dockerfile: Dockerfile
+      container_name: nginx
+      hostname: nginx
+      entrypoint: nginx -g "daemon off;"
+      ports:
+        - "80:80"
+      networks: 
+        wpp-network:
+          ipv4_address: 172.20.0.0
+      deploy:
+        resources:
+          limits:
+            memory: 500M
+          reservations:
+            memory: 200M
+      depends_on:
+        - wpp-slot-1
+        - wpp-slot-2
+    
+networks: 
+  wpp-network:
+    name: wpp-network
+    driver: bridge 
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
